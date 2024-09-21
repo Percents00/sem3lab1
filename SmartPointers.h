@@ -5,15 +5,19 @@ class SmartPtr {
 private:
     T* ptr;
     size_t* refCount;
+
 public:
+
+    SmartPtr() : ptr(nullptr), refCount(nullptr) {}
+
     SmartPtr(T* p = nullptr) : ptr(p) {
-        refCount = new size_t(1);
+        refCount = (p != nullptr) ? new size_t(1) : nullptr;
     }
 
-    SmartPtr(const SmartPtr<T>& other) {
-        ptr = other.ptr;
-        refCount = other.refCount;
-        ++(*refCount);
+    SmartPtr(const SmartPtr<T>& other) : ptr(other.ptr), refCount(other.refCount) {
+        if (ptr != nullptr) {
+            ++(*refCount);
+        }
     }
 
 
@@ -21,11 +25,15 @@ public:
         if (this != &other) {
             if (--(*refCount) == 0) {
                 delete ptr;
-                delete refCount;
+                delete refCount;    
             }
             ptr = other.ptr;
             refCount = other.refCount;
-            ++(*refCount);
+            
+            if (ptr != nullptr) {
+                ++(*refCount);
+            }
+
         }
         return *this;
     }
@@ -37,9 +45,20 @@ public:
         }
     }
 
-    T& operator*() { return *ptr; }
-    T* operator->() { return ptr; }
+    T& operator*() {
+        if (ptr == nullptr) {
+            throw std::runtime_error("null SmartPtr");
+        }
+        return *ptr;
+    }
 
 
-    size_t getRefCount() { return *refCount; }
+    T* operator->() {
+        if (ptr == nullptr) {
+            throw std::runtime_error("null SmartPtr");
+        }
+    }
+
+
+    size_t getRefCount() { return (refCount != nullptr) ? *refCount : 0; }
 };
