@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stdexcept>
+
 template <typename T>
 class SmartPtr {
 private:
@@ -7,10 +9,9 @@ private:
     size_t* refCount;
 
 public:
-
     SmartPtr() : ptr(nullptr), refCount(nullptr) {}
 
-    SmartPtr(T* p = nullptr) : ptr(p) {
+    explicit SmartPtr(T* p) : ptr(p) {
         refCount = (p != nullptr) ? new size_t(1) : nullptr;
     }
 
@@ -20,45 +21,49 @@ public:
         }
     }
 
-
     SmartPtr<T>& operator=(const SmartPtr<T>& other) {
         if (this != &other) {
-            if (--(*refCount) == 0) {
+            if (refCount != nullptr && --(*refCount) == 0) {
                 delete ptr;
-                delete refCount;    
+                delete refCount;
             }
+
             ptr = other.ptr;
             refCount = other.refCount;
-            
+
             if (ptr != nullptr) {
                 ++(*refCount);
             }
-
         }
         return *this;
     }
 
     ~SmartPtr() {
-        if (--(*refCount) == 0) {
+        if (refCount != nullptr && --(*refCount) == 0) {
             delete ptr;
             delete refCount;
         }
     }
 
-    T& operator*() {
+    T& operator*() const {
         if (ptr == nullptr) {
-            throw std::runtime_error("null SmartPtr");
+            throw std::runtime_error("null SmartPtr dereference");
         }
         return *ptr;
     }
 
-
-    T* operator->() {
+    T* operator->() const {
         if (ptr == nullptr) {
-            throw std::runtime_error("null SmartPtr");
+            throw std::runtime_error("null SmartPtr dereference");
         }
+        return ptr;
     }
 
+    size_t getRefCount() const {
+        return (refCount != nullptr) ? *refCount : 0;
+    }
 
-    size_t getRefCount() { return (refCount != nullptr) ? *refCount : 0; }
+    bool isNull() const {
+        return ptr == nullptr;
+    }
 };
