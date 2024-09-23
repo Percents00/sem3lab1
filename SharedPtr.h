@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstddef>
+
 template <typename T>
 class SharedPtr {
 private:
@@ -29,7 +31,7 @@ public:
 
     SharedPtr& operator=(const SharedPtr& other) {
         if (this != &other) {
-            release():
+            release();
 
             ptr = other.ptr;
             refCount = other.refCount;
