@@ -10,7 +10,7 @@ public:
 
     explicit UniquePtr(T* p) : ptr(p) {}
 
-    ~UniquePtr() { //zxp
+    ~UniquePtr() {
         delete ptr;
     }
 
