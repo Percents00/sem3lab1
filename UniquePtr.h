@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stdexcept>
+
 template <typename T>
 class UniquePtr {
 private:
@@ -29,14 +31,33 @@ public:
         return *this;
     }
 
-    T& operator*() const {
+    T& operator*() {
+        if (!ptr) {
+            throw std::runtime_error("Dereferencing null UniquePtr");
+        }
         return *ptr;
     }
 
-    T* operator->() const {
+    const T& operator*() const {
+        if (!ptr) {
+            throw std::runtime_error("Dereferencing null UniquePtr");
+        }
+        return *ptr;
+    }
+
+    T* operator->() {
+        if (!ptr) {
+            return nullptr;
+        }
         return ptr;
     }
 
+    const T* operator->() const {
+        if (!ptr) {
+            return nullptr;
+        }
+        return ptr;
+    }
 
     T* get() const {
         return ptr;

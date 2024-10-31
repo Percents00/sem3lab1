@@ -1,22 +1,13 @@
 #pragma once
 
 #include <cstddef>
+#include <stdexcept>
 
 template <typename T>
 class SharedPtr {
 private:
     T* ptr;
     size_t* refCount;
-
-    void release() {
-        if (refCount) {
-            (*refCount)--;
-            if (*refCount == 0) {
-                delete ptr;
-                delete refCount;
-            }
-        }
-    }
 
 public:
     SharedPtr() : ptr(nullptr), refCount(nullptr) {}
@@ -31,7 +22,10 @@ public:
 
     SharedPtr& operator=(const SharedPtr& other) {
         if (this != &other) {
-            release();
+            if (refCount && --(*refCount) == 0) {
+                delete ptr;
+                delete refCount;
+            }
 
             ptr = other.ptr;
             refCount = other.refCount;
@@ -50,7 +44,10 @@ public:
 
     SharedPtr& operator=(SharedPtr&& other) noexcept {
         if (this != &other) {
-            release();
+            if (refCount && --(*refCount) == 0) {
+                delete ptr;
+                delete refCount;
+            }
             ptr = other.ptr;
             refCount = other.refCount;
 
@@ -60,15 +57,38 @@ public:
         return *this;
     }
 
-   ~SharedPtr() {
-        release();
+    ~SharedPtr() {
+        if (refCount && --(*refCount) == 0) {
+            delete ptr;
+            delete refCount;
+        }
     }
 
-    T& operator*() const {
+    T& operator*() {
+        if (!ptr) {
+            throw std::runtime_error("Dereferencing null UniquePtr");
+        }
         return *ptr;
     }
 
-    T* operator->() const {
+    const T& operator*() const {
+        if (!ptr) {
+            throw std::runtime_error("Dereferencing null UniquePtr");
+        }
+        return *ptr;
+    }
+
+    T* operator->() {
+        if (!ptr) {
+            return nullptr;
+        }
+        return ptr;
+    }
+
+    const T* operator->() const {
+        if (!ptr) {
+            return nullptr;
+        }
         return ptr;
     }
 
@@ -81,6 +101,6 @@ public:
     }
 
     bool isNull() const {
-        return ptr == nullptr;
+         return ptr == nullptr;
     }
 };
