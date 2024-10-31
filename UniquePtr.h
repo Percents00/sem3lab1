@@ -63,11 +63,11 @@ public:
         return ptr;
     }
 
-    T* release() {
-        T* temp = ptr;
-        ptr = nullptr;
-        return temp;
-    }
+    // T* release() {
+    //     T* temp = ptr;
+    //     ptr = nullptr;
+    //     return temp;
+    // }
 
     void reset(T* p = nullptr) {
         delete ptr;
