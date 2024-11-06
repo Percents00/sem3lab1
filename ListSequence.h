@@ -13,37 +13,39 @@ private:
 public:
     ListSequence() : list(new LinkedList<T>()) {}
 
-    ListSequence(const SharedPtr<T>* items, int count) : list(new LinkedList<T>(items, count)) {}
+    ListSequence(const T* items, int count) : list(new LinkedList<T>(items, count)) {}
 
-    ListSequence(const ListSequence<T>& other) : list(other.list) {}
+    ListSequence(const ListSequence<T>& other) : list(new LinkedList<T>(*other.list)) {}
 
     ListSequence<T>& operator=(const ListSequence<T>& other) {
         if (this != &other) {
-            list = other.list;
+            list = SharedPtr<LinkedList<T>>(new LinkedList<T>(*other.list));
         }
         return *this;
     }
 
     ~ListSequence() override = default;
 
-    void Append(const SharedPtr<T>& item) override {
+    void Append(const T& item) override {
         list->Append(item);
     }
 
-    void Prepend(const SharedPtr<T>& item) override {
+    void Prepend(const T& item) override {
         list->Prepend(item);
     }
 
 
     SharedPtr<Sequence<T>> GetSubSequence(int startIndex, int endIndex) override {
+        auto subList = new LinkedList<T>();
+        *subList = list->GetSubList(startIndex, endIndex);
         auto newList = new ListSequence<T>();
-        newList->list = SharedPtr<LinkedList<T>>(new LinkedList<T>(list->GetSubList(startIndex, endIndex)));
+        newList->list = SharedPtr<LinkedList<T>>(subList);
 
         return SharedPtr<Sequence<T>>(newList);
     }
 
 
-    void InsertAt(int index, const SharedPtr<T>& item) override {
+    void InsertAt(int index, const T* item) override {
         list->InsertAt(index, item);
     }
 
