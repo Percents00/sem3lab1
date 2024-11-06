@@ -17,13 +17,14 @@ template<class T>
 class LinkedList {
 private:
     SharedPtr<Node<T>> head;
+    SharedPtr<Node<T>> tail;
     int size;
 
 
 public:
-    LinkedList() : head(nullptr), size(0) {}
+    LinkedList() : head(nullptr), tail(nullptr), size(0) {}
 
-    LinkedList(const SharedPtr<T> *items, int count) : head(nullptr), size(0) {
+    LinkedList(const T *items, int count) : head(nullptr), tail(nullptr), size(0) {
         for (int i = 0; i < count; ++i) {
             Append(items[i]);
         }
@@ -34,6 +35,14 @@ public:
     }
 
     ~LinkedList() = default;
+
+    LinkedList(const LinkedList<T>& other) : head(nullptr), tail(nullptr), size(0) {
+        SharedPtr<Node<T>> current = other.head;
+        while (!current.isNull()) {
+            Append(current->data);
+            current = current->next;
+        }
+    }
 
     SharedPtr<T> GetFirst() const {
         if (head.isNull()) {
@@ -72,7 +81,7 @@ public:
         }
 
         for (int i = startIndex; i <= endIndex; ++i) {
-            sublist.Append(SharedPtr<T>(new T(current->data)));
+            sublist.Append(current->data);
             current = current->next;
         }
         return sublist;
@@ -83,21 +92,19 @@ public:
     }
 
     void Append(const SharedPtr<T>& item) {
-        SharedPtr<Node<T>> newNode(new Node<T>(*item));
+        SharedPtr<Node<T>> newNode(new Node<T>(item));
         if (head.isNull()) {
             head = newNode;
+            tail = newNode;
         } else {
-            SharedPtr<Node<T>> temp = head;
-            while (!temp->next.isNull()) {
-                temp = temp->next;
-            }
-            temp->next = newNode;
+            tail->next = newNode;
+            tail = newNode;
         }
         size++;
     }
 
     void Prepend(const SharedPtr<T>& item) {
-        SharedPtr<Node<T>> newNode(new Node<T>(*item));
+        SharedPtr<Node<T>> newNode(new Node<T>(item));
         newNode->next = head;
         head = newNode;
         size++;
@@ -116,13 +123,31 @@ public:
             prev = prev->next;
         }
 
-        SharedPtr<Node<T>> newNode(new Node<T>(*item));
+        SharedPtr<Node<T>> newNode(new Node<T>(item));
         newNode->next = prev->next;
         prev->next = newNode;
 
         size++;
     }
 
+
+
+    
+    LinkedList<T>& operator=(const LinkedList<T>& other) {
+      if(this != &other){
+        head = nullptr;
+        tail = nullptr;
+        size = 0;
+        SharedPtr<Node<T>> current = other.head;
+        while(!current.isNull()){
+          Append(current->data);
+          current = current->next;
+        }
+
+      }
+      return *this;
+
+    }
 
 
 private:
