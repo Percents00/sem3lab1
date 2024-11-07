@@ -9,6 +9,14 @@ private:
     T* ptr;
     size_t* refCount;
 
+
+    void release() {
+        if (refCount && --(*refCount) == 0) {
+            delete ptr;
+            delete refCount;
+        }
+    }
+
 public:
     SharedPtr() : ptr(nullptr), refCount(nullptr) {}
 
@@ -22,10 +30,7 @@ public:
 
     SharedPtr& operator=(const SharedPtr& other) {
         if (this != &other) {
-            if (refCount && --(*refCount) == 0) {
-                delete ptr;
-                delete refCount;
-            }
+            release();
 
             ptr = other.ptr;
             refCount = other.refCount;
@@ -44,10 +49,8 @@ public:
 
     SharedPtr& operator=(SharedPtr&& other) noexcept {
         if (this != &other) {
-            if (refCount && --(*refCount) == 0) {
-                delete ptr;
-                delete refCount;
-            }
+            release();
+
             ptr = other.ptr;
             refCount = other.refCount;
 
@@ -58,10 +61,7 @@ public:
     }
 
     ~SharedPtr() {
-        if (refCount && --(*refCount) == 0) {
-            delete ptr;
-            delete refCount;
-        }
+        release();
     }
 
     T& operator*() {
