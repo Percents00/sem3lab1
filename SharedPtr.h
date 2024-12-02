@@ -6,101 +6,97 @@
 template <typename T>
 class SharedPtr {
 private:
-    T* ptr;
-    size_t* refCount;
+  struct ControlBlock {
+    std::size_t ref_count = 1;
 
+    ~ControlBlock() = default;
 
-    void release() {
-        if (refCount && --(*refCount) == 0) {
-            delete ptr;
-            delete refCount;
-        }
-    }
+  };
+
+  T* ptr_ = nullptr;
+  ControlBlock* control_block_ = nullptr;
 
 public:
-    SharedPtr() : ptr(nullptr), refCount(nullptr) {}
+  SharedPtr() = default;
 
-    explicit SharedPtr(T* p) : ptr(p), refCount(new size_t(1)) {}
+  explicit SharedPtr(T* p) : ptr_(p), control_block_(p ? new ControlBlock() : nullptr) {}
 
-    SharedPtr(const SharedPtr& other) : ptr(other.ptr), refCount(other.refCount) {
-        if (refCount) {
-            (*refCount)++;
-        }
+
+  SharedPtr(const SharedPtr& other) : ptr_(other.ptr_), control_block_(other.control_block_) {
+    if (control_block_) {
+      ++control_block_->ref_count;
     }
+  }
 
-    SharedPtr& operator=(const SharedPtr& other) {
-        if (this != &other) {
-            release();
+  SharedPtr(SharedPtr&& other) noexcept : ptr_(std::exchange(other.ptr_, nullptr)), control_block_(std::exchange(other.control_block_, nullptr)) {}
 
-            ptr = other.ptr;
-            refCount = other.refCount;
-            if (refCount) {
-                (*refCount)++;
-            }
-        }
+  SharedPtr& operator=(const SharedPtr& other) {
+      if (this != &other) {
+          if (control_block_) {
+              --control_block_->ref_count;
+              if (control_block_->ref_count == 0) {
+                  delete ptr_;
+                  delete control_block_;
+              }
+          }
+          ptr_ = other.ptr_;
+          control_block_ = other.control_block_;
+          if (control_block_) {
+              ++control_block_->ref_count;
+          }
+      }
+      return *this;
+  }
 
-        return *this;
+  SharedPtr& operator=(SharedPtr&& other) noexcept {
+    if (this != &other) {
+      this->reset();
+      ptr_ = std::exchange(other.ptr_, nullptr);
+      control_block_ = std::exchange(other.control_block_, nullptr);
     }
+    return *this;
+  }
 
-    SharedPtr(SharedPtr&& other) noexcept : ptr(other.ptr), refCount(other.refCount) {
-        other.ptr = nullptr;
-        other.refCount = nullptr;
+  ~SharedPtr() { this->reset(); }
+
+  T& operator*() const {
+    if (!ptr_) {
+      throw std::runtime_error("Dereferencing null SharedPtr");
     }
+    return *ptr_;
+  }
 
-    SharedPtr& operator=(SharedPtr&& other) noexcept {
-        if (this != &other) {
-            release();
-
-            ptr = other.ptr;
-            refCount = other.refCount;
-
-            other.ptr = nullptr;
-            other.refCount = nullptr;
-        }
-        return *this;
+  T* operator->() const {
+    if (!ptr_) {
+      throw std::runtime_error("Dereferencing null SharedPtr");
     }
+    return ptr_;
+  }
 
-    ~SharedPtr() {
-        release();
-    }
 
-    T& operator*() {
-        if (!ptr) {
-            throw std::runtime_error("Dereferencing null UniquePtr");
-        }
-        return *ptr;
-    }
+  T* Get() const noexcept { return ptr_; }
 
-    const T& operator*() const {
-        if (!ptr) {
-            throw std::runtime_error("Dereferencing null UniquePtr");
-        }
-        return *ptr;
-    }
+  std::size_t getRefCount() const noexcept { return control_block_ ? control_block_->ref_count : 0; }
 
-    T* operator->() {
-        if (!ptr) {
-            return nullptr;
-        }
-        return ptr;
+  void reset() noexcept {
+    if (control_block_ && --control_block_->ref_count == 0) {
+      delete ptr_;
+      delete control_block_;
     }
+    ptr_ = nullptr;
+    control_block_ = nullptr;
+  }
 
-    const T* operator->() const {
-        if (!ptr) {
-            return nullptr;
-        }
-        return ptr;
-    }
+  void reset(T* newPtr) {
+    this->reset();
+    ptr_ = newPtr;
+    control_block_ = newPtr ? new ControlBlock() : nullptr;
+  }
 
-    T* get() const {
-        return ptr;
-    }
 
-    size_t use_count() const {
-        return refCount ? *refCount : 0;
-    }
+  explicit operator bool() const noexcept { return ptr_ != nullptr; }
 
-    bool isNull() const {
-         return ptr == nullptr;
-    }
+  bool operator==(std::nullptr_t) const noexcept { return ptr_ == nullptr; }
+  bool operator!=(std::nullptr_t) const noexcept { return ptr_ != nullptr; }
+
 };

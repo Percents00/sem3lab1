@@ -1,74 +1,54 @@
 #pragma once
 
 #include <stdexcept>
+#include <utility>
 
 template <typename T>
 class UniquePtr {
 private:
-    T* ptr;
+  T* ptr_ = nullptr;
 
 public:
-    UniquePtr() : ptr(nullptr) {}
+  UniquePtr() = default;
 
-    explicit UniquePtr(T* p) : ptr(p) {}
+  explicit UniquePtr(T* p) : ptr_(p) {}
 
-    ~UniquePtr() {
-        delete ptr;
+  UniquePtr(UniquePtr&& other) noexcept : ptr_(std::exchange(other.ptr_, nullptr)) {}
+
+  ~UniquePtr() { delete ptr_; }
+
+  UniquePtr& operator=(UniquePtr&& other) noexcept {
+    if (this != &other) {
+      delete ptr_;
+      ptr_ = std::exchange(other.ptr_, nullptr);
     }
+    return *this;
+  }
 
-    UniquePtr(const UniquePtr& other) = delete;
+  UniquePtr(const UniquePtr&) = delete;
+  UniquePtr& operator=(const UniquePtr&) = delete;
 
-    UniquePtr(UniquePtr&& other) noexcept : ptr(other.ptr) {
-        other.ptr = nullptr;
+  T& operator*() const {
+    if (!ptr_) {
+      throw std::runtime_error("Dereferencing null UniquePtr");
     }
+    return *ptr_;
+  }
 
-    UniquePtr& operator=(UniquePtr&& other) noexcept {
-        if (this != &other) {
-            delete ptr;
-            ptr = other.ptr;
-            other.ptr = nullptr;
-        }
-        return *this;
+  T* operator->() const {
+    if (!ptr_) {
+      throw std::runtime_error("Dereferencing null UniquePtr");
     }
+    return ptr_;
+  }
 
-    T& operator*() {
-        if (!ptr) {
-            throw std::runtime_error("Dereferencing null UniquePtr");
-        }
-        return *ptr;
-    }
+  T* Get() const noexcept { return ptr_; }
 
-    const T& operator*() const {
-        if (!ptr) {
-            throw std::runtime_error("Dereferencing null UniquePtr");
-        }
-        return *ptr;
-    }
+  void swap(UniquePtr& other) noexcept { std::swap(ptr_, other.ptr_); }
 
-    T* operator->() {
-        if (!ptr) {
-            return nullptr;
-        }
-        return ptr;
-    }
+  explicit operator bool() const noexcept { return ptr_ != nullptr; }
 
-    const T* operator->() const {
-        if (!ptr) {
-            return nullptr;
-        }
-        return ptr;
-    }
+  bool operator==(std::nullptr_t) const noexcept { return ptr_ == nullptr; }
+  bool operator!=(std::nullptr_t) const noexcept { return ptr_ != nullptr; }
 
-    T* get() const {
-        return ptr;
-    }   
-
-    void reset(T* p = nullptr) {
-        delete ptr;
-        ptr = p;
-    }
-
-    bool isNull() const {
-        return ptr == nullptr;
-    }
 };
